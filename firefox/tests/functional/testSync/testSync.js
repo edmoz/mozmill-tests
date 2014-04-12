@@ -34,10 +34,23 @@ var setupModule = function(aModule) {
   testUser = USER + "@" + DOMAIN;
 }
 
+var teardownModule = function(aModule) {
+  // Delete restmail email
+  var xmlHttp = new aModule.controller.tabs.activeTab.defaultView.XMLHttpRequest;
+  xmlHttp.open( "DELETE", MAIL_SERVER + testUser, false );
+  xmlHttp.send( null );
+}
+
 var testSyncEndToEnd = function() {
 
   // Open signup page
   sync.navigateToSignup(controller);
+
+  // Check that user do not have bookmark
+  var uri = utils.createURI(BOOKMARK_URL);
+  var bookmarkFolder = places.bookmarksService.bookmarksMenuFolder;
+  var bookmarkExists = places.isBookmarkInFolder(uri, bookmarkFolder);
+  expect.ok(!bookmarkExists, "Bookmark do not exist");
 
   // Find and fill email field
   signUpSite.typeEmail(testUser);
@@ -51,24 +64,30 @@ var testSyncEndToEnd = function() {
   // Find and click on button
   signUpSite.clickNextButton();
 
+  // Verify account create page
+  // controller.waitForPageLoad();
+  var accountConfirmedHeader = findElement.ID(controller.window.content.document, "fxa-confirm-header");
+  accountConfirmedHeader.waitForElement(100000, 1000);
+  expect.ok(accountConfirmedHeader.exists(), "Unverified account create confirmed");
+
   // Wait for e-mail
   var xmlHttp = new controller.tabs.activeTab.defaultView.XMLHttpRequest;
   var response = "[]";
-
+  var verifyUrl = "";
+  controller.sleep(3000);
   controller.waitFor(function () {
     xmlHttp.open( "GET", MAIL_SERVER + testUser, false );
     xmlHttp.send( null );
     response = xmlHttp.responseText;
+    var json = JSON.parse(response);
+    verifyUrl = json[0]['headers']['x-link'];
     return response != "[]";
-  }, "Waiting for an email", 100000, 1000);
-
-  // Get url params from email
-  var match = regex.exec(response);
+  }, "Waiting for an email", 3000, 1000);
 
   // Verify email address
-  controller.open(VERIFY_SERVICE + "?" + match[0]);
+  controller.open(verifyUrl);
   controller.waitForPageLoad();
-  var accountVerifiedHeader = findElement.ID(controller.window.content.document, "fxa-complete-sign-up-header");
+  var accountVerifiedHeader = findElement.ID(controller.window.content.document, "fxa-sign-up-complete-header");
   accountVerifiedHeader.waitForElement(100000, 1000);
   expect.ok(accountVerifiedHeader.exists(), "User is on complete sign up page");
 

@@ -42,6 +42,12 @@ var testSyncEndToEnd2 = function() {
   // Open sign-in page
   sync.navigateToSignin(controller);
 
+  // Check that user do not have bookmark
+  var uri = utils.createURI(BOOKMARK_URL);
+  var bookmarkFolder = places.bookmarksService.bookmarksMenuFolder;
+  var bookmarkExists = places.isBookmarkInFolder(uri, bookmarkFolder);
+  expect.ok(!bookmarkExists, "Bookmark do not exist");
+
   // Find and fill email field
   var email = findElement.XPath(controller.tabs.activeTab, "descendant-or-self::input[contains(concat(' ', normalize-space(@class), ' '), ' email ')]");
   email.waitThenClick();
