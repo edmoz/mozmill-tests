@@ -30,14 +30,15 @@ var setupModule = function(aModule) {
   aModule.controller = mozmill.getBrowserController();
   aModule.locationBar =  new toolbars.locationBar(aModule.controller);
   aModule.signUpSite = new sync.SignUpSite(aModule.controller);
-  testUser = USER + utils.appInfo.ID + utils.appInfo.version + utils.appInfo.appBuildID + "@" + DOMAIN;
+  //testUser = USER + utils.appInfo.ID + utils.appInfo.version + utils.appInfo.appBuildID + "@" + DOMAIN;
+  testUser = USER + "@" + DOMAIN;
 }
 
 var testSyncEndToEnd = function() {
 
   // Open signup page
   sync.navigateToSignup(controller);
-  
+
   // Find and fill email field
   signUpSite.typeEmail(testUser);
 
@@ -49,29 +50,29 @@ var testSyncEndToEnd = function() {
 
   // Find and click on button
   signUpSite.clickNextButton();
-  
+
   // Wait for e-mail
   var xmlHttp = new controller.tabs.activeTab.defaultView.XMLHttpRequest;
   var response = "[]";
-  
-  controller.waitFor(function () { 
+
+  controller.waitFor(function () {
     xmlHttp.open( "GET", MAIL_SERVER + testUser, false );
     xmlHttp.send( null );
     response = xmlHttp.responseText;
     return response != "[]";
   }, "Waiting for an email", 100000, 1000);
-  
+
   // Get url params from email
   var match = regex.exec(response);
-  
+
   // Verify email address
   controller.open(VERIFY_SERVICE + "?" + match[0]);
   controller.waitForPageLoad();
   var accountVerifiedHeader = findElement.ID(controller.window.content.document, "fxa-complete-sign-up-header");
   accountVerifiedHeader.waitForElement(100000, 1000);
   expect.ok(accountVerifiedHeader.exists(), "User is on complete sign up page");
-  
- 
+
+
   // Open URI and wait until it has been finished loading
   var uri = utils.createURI(BOOKMARK_URL);
   controller.open(uri.spec);
@@ -89,7 +90,7 @@ var testSyncEndToEnd = function() {
 
   controller.type(nameField, "Mozilla");
   controller.click(doneButton);
-  
+
   // copied from testAddBookmarkToMenu.js
   // Bug 474486
   // Until we can't check via a menu click, call the Places API function for now
@@ -100,9 +101,7 @@ var testSyncEndToEnd = function() {
 }
 
 var type = function(aElement, aString) {
-  for (var i = 0, len = aString.length; i < len; i++) { 
+  for (var i = 0, len = aString.length; i < len; i++) {
     aElement.keypress(aString[i]);
   }
 }
-
-

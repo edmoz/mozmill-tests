@@ -25,17 +25,22 @@ var testUser= "";
 
 var setupModule = function(aModule) {
   aModule.controller = mozmill.getBrowserController();
-  testUser = USER + utils.appInfo.ID + utils.appInfo.version + utils.appInfo.appBuildID + "@" + DOMAIN;
+  //testUser = USER + utils.appInfo.ID + utils.appInfo.version + utils.appInfo.appBuildID + "@" + DOMAIN;
+  testUser = USER + "@" + DOMAIN;
+  aModule.deleteAccountSite = new sync.DeleteAccountSite(aModule.controller);
 }
 
 var teardownModule = function(aModule) {
   places.restoreDefaultBookmarks();
+  sync.navigateToDeleteAccount(aModule.controller);
+  aModule.deleteAccountSite.typePassword(PASSWORD);
+  aModule.deleteAccountSite.deleteAccountButton.waitThenClick();
 }
 
 var testSyncEndToEnd2 = function() {
-  
+
   // Open sign-in page
-  sync.navigateToSignin(controller);  
+  sync.navigateToSignin(controller);
 
   // Find and fill email field
   var email = findElement.XPath(controller.tabs.activeTab, "descendant-or-self::input[contains(concat(' ', normalize-space(@class), ' '), ' email ')]");
@@ -50,7 +55,12 @@ var testSyncEndToEnd2 = function() {
   // Find and click on button
   var nextButton = findElement.XPath(controller.tabs.activeTab, "descendant-or-self::button");
   nextButton.click();
-  
+
+  // wait for Welcome to Sync
+  controller.waitFor(function () {
+    return controller.tabs.activeTab.URL === "about:accounts";
+  }, "about:accounts", 10000, 1000);
+
   // Wait and validate bookmark
   controller.tabs.activeTab.defaultView.setTimeout(function(){ checkBookmark() } , 10000);
 }
@@ -62,11 +72,11 @@ var checkBookmark = function() {
   var uri = utils.createURI(BOOKMARK_URL);
   var bookmarkFolder = places.bookmarksService.bookmarksMenuFolder;
   var bookmarkExists = places.isBookmarkInFolder(uri, bookmarkFolder);
-  expect.ok(bookmarkExists, "Bookmark was created in the bookmarks menu");  
+  expect.ok(bookmarkExists, "Bookmark was created in the bookmarks menu");
 }
 
 var type = function(aElement, aString) {
-  for (var i = 0, len = aString.length; i < len; i++) { 
+  for (var i = 0, len = aString.length; i < len; i++) {
     aElement.keypress(aString[i]);
   }
 }
